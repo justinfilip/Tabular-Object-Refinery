@@ -87,7 +87,64 @@ def salesforce_object_refinery_main():
     # Match regular expression against the selected field and return positive results.
 
             if int(param_field[1]) == 0:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
                 # 2.0 Begin processing batch matching string or regex against selected target fields
+
+                # Memory
+                # In the original version, memory is saved by processing the input dataset line by line, the rows that match your criteria will be saved to memory so the amount of memory used will vary depending on what your criteria is and the degree of correlation to your dataset
+                
+                # CPU
+                # More faster = better, but it's decently quick anyway
+
+
+                # Replace with a function call
+                    
+                    # When the match is detected, instead of just returning the matching row to the output dataset or returning items that do not match the selected criteria, apply some transofrmation to the data
+                        
+                        # Options
+
+                            # Method 02: 
+                            # Replace with content of the alteration field in the paramters file
+                                
+                            # Method 03:
+                            # Alter using matching field sibling 
+                                # meaning: 
+
+                                    # > you're processing a row
+                                    # > your keyword or expression matches the user selected field in the dataset that is being searched within the row you are currently processing
+
+                                    # "if you find this in the dataset, use the content of the 'modifier' parameter from the parameters file as the keyword or part of an expression to 'dynamically transform the dataset'"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
                 # for each index, object in target_objects
                 for to_index, to_object in target_objects.items():
@@ -116,6 +173,8 @@ def salesforce_object_refinery_main():
                                                 # if the selected field contains the search criteria from the parameters file
                                                 if re.match('.*' + param_field[5] + '.*', rf_content_cleaned):
                                                     result_list = []
+
+                                                    # # #
                                                     # write the selected return field to the search results file
                                                     for x, rp in return_parameters.items():
                                                         if rp == field_parameter:
@@ -183,7 +242,152 @@ def salesforce_object_refinery_main():
     # Method 1:
     # Match regular expression against the selected field and return negative results.
             if int(param_field[1]) == 1:
+
+
+
+
                 # 2.0 Begin processing batch matching string or regex against selected target fields
+
+
+
+
+
+
+                # for each index, object in target_objects
+                for to_index, to_object in target_objects.items():
+                    if to_object.endswith(".csv"):
+                        with open(current_path + 'Objects' + nav + str(param_field[6]) + nav + str(to_object), 'r', encoding='UTF-8') as engaged_object, open(current_path + 'Refined Objects' + nav + str(param_field[6]) + '_' + str(target_objects[to_index]) + '_' + str(datetime.now()) + '.csv', "w+", encoding='UTF-8') as results:
+                            filtered_object = (line.replace('\n' or '\r', '') for line in engaged_object)
+                            object_reader = csv.reader(filtered_object, dialect='excel', skipinitialspace=True, delimiter=',', quotechar='"', quoting=csv.QUOTE_ALL)
+                            results_writer = csv.writer(results, dialect='excel', skipinitialspace=True, delimiter=',', quotechar='"')
+                            row_data = {}
+
+                            # if to_object.endswith(".csv"):
+                            for n, row in enumerate(engaged_object):
+                                if n > 0:
+                                    row_fields = list(next(object_reader))
+
+                                    for rf_index, rf_content in enumerate(row_fields):
+                                        rf_content_stripped = re.split(r'\W|\d', rf_content)
+                                        rf_content_strung = ' '.join(rf_content_stripped)
+                                        rf_content_remnlc = rf_content_strung.replace('(\n|,)', '')
+                                        rf_content_cleaned = rf_content_remnlc.replace('  ', ' ')
+                                        row_data.update({rf_index: rf_content_cleaned})
+
+                                        for entity, field_parameter in field_parameters.items():
+                                            if (int(rf_index) == int(field_parameter)):
+                                                # if the selected field contains the search criteria from the parameters file
+                                                if re.match('.*' + param_field[5] + '.*', rf_content_cleaned):
+                                                    pass
+
+                                                else:
+                                                    result_list = []
+
+                                                    # write the selected return field to the search results file
+                                                    for x, rp in return_parameters.items():
+                                                        if rp == field_parameter:
+                                                            result_list.append(row_data[rf_index])
+
+                                                        else:
+                                                            try:
+                                                                result_list.append(row_fields[int(rp)])
+                                                            except Exception as e:
+                                                                continue
+
+                                                    results_writer.writerow(result_list)
+                                            else:
+                                                continue
+                                else:
+                                    row_fields = row.rstrip().split(',')
+                                    first_row = []
+
+                                    for ri, r in return_parameters.items():
+                                        field_name = str(row_fields[int(r)]).replace('"', '')
+                                        first_row.append(field_name)
+
+                                    results_writer.writerow(first_row)
+
+                    elif to_object.endswith(".xml"):
+                        # parse xml and assign indecies to fields
+                        with open(current_path + 'Refined Objects' + nav + str(param_field[6]) + '_' + str(target_objects[to_index]) + '_' + str(datetime.now()) + '.csv', "w+", encoding='UTF-8') as results:
+                            results_writer = csv.writer(results, dialect='excel', skipinitialspace=True, delimiter=',', quotechar='"')
+                            tree = ET.parse(current_path + 'Objects' + nav + str(param_field[6]) + nav + str(to_object))
+                            root = tree.getroot()
+
+                            #get the structure and write it as the first row of the results file
+                            run_timer = 0
+                            field_list = []
+                            while run_timer < 1:
+                                for count in range(len(root)):
+                                    if run_timer < 1:
+                                        for i, item in enumerate(root[count]):
+                                            if i < len(root[count]):
+                                                field_list.append(item.tag[48:len(item.tag)])
+                                            else:
+                                                pass     
+                                    else:
+                                        pass
+                                    run_timer = run_timer + 1
+
+                            results_writer.writerow(field_list)
+
+                            #process every node of the tree and return results where the search critera matches the selected field
+                            for count in range(len(root)):
+                                field_item_list = []
+                                for i, item in enumerate(root[count]):
+                                    if i < len(root[count]):
+                                        field_item_list.append(item.text)
+                                    else:
+                                        pass  
+                                if re.match('.*' + param_field[5] + '.*', str(field_item_list[int(param_field[3])])):   
+                                    pass
+                                else:
+                                    results_writer.writerow(field_item_list)
+
+                    elif to_object.endswith(('.tsv', '.txt')):
+                        with open(current_path + 'Objects' + nav + str(param_field[6]) + nav + str(to_object), 'r', encoding='UTF-8') as engaged_object, open(current_path + 'Refined Objects' + nav + str(param_field[6]) + '_' + str(target_objects[to_index]) + '_' + str(datetime.now()) + '.csv', "w+", encoding='UTF-8') as results:
+                            object_reader = csv.reader(engaged_object, delimiter='\t')
+                            results_writer = csv.writer(results, dialect='excel', skipinitialspace=True, delimiter=',', quotechar='"')
+
+                            for row in object_reader:
+                                row_data = {}
+
+                                for f_num, field in enumerate(row):
+                                    row_data.update({f_num: field})
+                                    result_list = []
+                                    
+                                    for entity, field_parameter in field_parameters.items():
+                                        if (f_num == int(field_parameter)):
+                                            if re.match('.*' + param_field[5] + '.*', field):
+                                                continue
+                                            else:
+                                                try:
+                                                    results_writer.writerow(row)
+                                                except Exception as e:
+                                                    continue
+                                        else:
+                                            continue
+                    else:
+                        pass
+            else:
+                pass
+
+
+    # Method 2:
+    # Match regular expression against the selected field and return negative results.
+            if int(param_field[1]) == 2:
+
+
+
+                # xtrachz
+                # 2.0 Begin processing batch matching string or regex against selected target fields
+
+
+
+
+
+
+
                 # for each index, object in target_objects
                 for to_index, to_object in target_objects.items():
                     if to_object.endswith(".csv"):
