@@ -1,3 +1,3 @@
-notes,selected_method,selected_objects,selected_field,return_fields,criteria,directory_name
-0,0,0,3,1|2|3,.cn,Name of Use Case
-1,0,0,3,1|2|3|4,(theatlantic|washingtonpost),Name of Use Case
+notes,selected_method,selected_objects,selected_field,return_fields,criteria,directory_name,alteration
+0,1,0,3,1|2|3,.cn,Name of Use Case,cheese
+1,1,0,3,1|2|3|4,(theatlantic|washingtonpost),Name of Use Case,bread
